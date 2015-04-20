@@ -206,6 +206,30 @@ var _ a.T
 `,
 			},
 		},
+		// package import comments as in https://golang.org/s/go14customimport (Custom Import Path Checking)
+		{
+			ctxt: fakeContext(map[string][]string{
+				"foo":   {`package foo // import "foo"; import "foo/a"; var _ a.T`},
+				"foo/a": {`package a; type T int`},
+				"foo/b": {`package b; import "foo/a"; var _ a.T`},
+			}),
+			from: "foo", to: "bar",
+			want: map[string]string{
+				"/go/src/bar/0.go": `package bar // import "bar"
+
+import "bar/a"
+
+var _ a.T
+`,
+				"/go/src/bar/a/0.go": `package a; type T int`,
+				"/go/src/bar/b/0.go": `package b
+
+import "bar/a"
+
+var _ a.T
+`,
+			},
+		},
 	}
 
 	for _, test := range tests {
